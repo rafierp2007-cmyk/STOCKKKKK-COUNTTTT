@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Manajemen Stok Barang</title>
+<style>
+  body { font-family: Arial, sans-serif; background-color: #b3d4fc; margin: 0; padding: 0; }
+  .container { width: 95%; max-width: 1100px; margin: 40px auto; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  h2 { text-align: center; color: #003399; display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom:10px; }
+  #logo { width:140px; height:auto; cursor:pointer; border-radius:12px; transition: transform 0.3s; }
+  #logo:hover { transform: scale(1.05); }
+  #userInfo { text-align:center; margin-bottom:10px; font-weight:bold; color:#333; }
+  table { width:100%; border-collapse: collapse; }
+  th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+  th { background-color: #0056d6; color:white; }
+  input[type="text"], input[type="number"] { width:90%; padding:6px; text-align:center; }
+  button { background-color:#ff3c3c; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; }
+  button:hover { background-color:#d42b2b; }
+  #addSection { text-align:center; margin:20px 0; }
+  #addSection h3 { color:#003399; }
+  .add-form { display:flex; justify-content:center; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px; }
+  .add-form input { padding:8px; border:1px solid #ccc; border-radius:5px; width:200px; text-align:center; }
+  .add-form button { background-color:#0056d6; color:white; border:none; padding:8px 14px; border-radius:5px; cursor:pointer; }
+  .add-form button:hover { background-color:#0041a8; }
+  .search-container { display:flex; justify-content:center; align-items:center; margin:10px auto 25px; }
+  #searchInput { width:60%; padding:10px; border-radius:8px; border:1px solid #ccc; text-align:center; font-size:15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s ease; }
+  #searchInput:focus { outline:none; border-color:#0056d6; box-shadow:0 0 5px rgba(0,86,214,0.3); }
+  input.login, input.pass { width:100%; padding:10px; margin-bottom:8px; border-radius:5px; border:1px solid #ccc; }
+  .btn { width:100%; padding:10px; background-color:#0056d6; color:white; border:none; border-radius:5px; cursor:pointer; }
+  .btn:hover { background-color:#0041a8; }
+  a { color:#0056d6; text-decoration:none; }
+  #logout { width:100%; background-color:#ff3c3c; color:white; text-align:center; padding:10px; border-radius:6px; font-weight:bold; margin-top:30px; cursor:pointer; }
+  #logout:hover { background-color:#d32f2f; }
+  .aksi-btn { display:flex; justify-content:center; gap:6px; }
+  .edit-btn { background-color:#00a82d; color:white; padding:6px 10px; border-radius:4px; border:none; cursor:pointer; }
+  .edit-btn:hover { background-color:#008c24; }
+  .low-stock { background-color:#ffe6e6 !important; }
+  .warning { color:red; font-weight:bold; font-size:13px; }
+  #modeBanner { text-align:center; font-weight:bold; color:white; padding:10px; margin-bottom:8px; }
+  #importStatus { font-size:13px; margin-top:6px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="container" id="loginPage">
+  <h2>Sign in</h2>
+  <input type="text" id="loginUser" placeholder="Username" class="login">
+  <input type="password" id="loginPass" placeholder="Password" class="pass">
+  <select id="loginRole" class="login" style="margin-bottom:10px;">
+    <option value="user">User</option>
+    <option value="admin">Administrator</option>
+  </select>
+  <button class="btn" onclick="login()">Login</button>
+  <p style="text-align:center;">you don't have account?<a href="#" onclick="showRegister()"> Sign up</a></p>
+</div>
+
+<!-- REGISTER -->
+<div class="container" id="registerPage" style="display:none;">
+  <h2>Sign up</h2>
+  <input type="text" id="regUser" placeholder="Buat Username" class="login">
+  <input type="password" id="regPass" placeholder="Buat Password" class="pass">
+  <input type="text" id="adminKey" placeholder="Kode Rahasia Admin (opsional)" class="login">
+  <button class="btn" onclick="register()">Sign Up</button>
+  <p style="text-align:center;">Sudah punya akun? <a href="#" onclick="showLogin()">Login</a></p>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="modeBanner"></div>
+<div class="container" id="mainPage" style="display:none;">
+  <div id="userInfo"></div>
+  <h2>
+    <img id="logo" src="https://cdn-icons-png.flaticon.com/512/3443/3443338.png" title="Klik untuk ganti logo">
+    STOCK COUNT
+  </h2>
+  <input type="file" id="logoInput" accept="image/*" style="display:none;">
+
+  <div id="addSection">
+    <h3>Add items</h3>
+    <div class="add-form">
+      <input type="text" id="namaBarang" placeholder="Name">
+      <input type="number" id="stokBarang" placeholder="Stock" min="0">
+      <button onclick="tambahBarang()">Add</button>
+    </div>
+  </div>
+
+  <!-- IMPORT EXCEL -->
+  <div style="text-align:center; margin:12px 0;">
+    <label for="excelInput" style="cursor:pointer; padding:8px 12px; border-radius:6px; background:#0056d6; color:white;">📥 Import Excel/CSV</label>
+    <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none;">
+    <select id="importMode" title="Pilih mode import" style="margin-left:8px; padding:6px; border-radius:6px;">
+      <option value="append">Append </option>
+      <option value="merge">Merge by name </option>
+    </select>
+    <div id="importStatus"></div>
+  </div>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Searching..." onkeyup="searchBarang()">
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Name items</th>
+        <th>Current Stock</th>
+        <th>Stock in</th>
+        <th>Stock out</th>
+        <th>Total</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tabelBody"></tbody>
+  </table>
+
+  <div id="logout" onclick="logout()">Logout</div>
+</div>
+
+<!-- SheetJS -->
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+/* IndexedDB setup & helper functions */
+let db;
+const DB_NAME = "stokBarangDB_v2";
+const DB_VERSION = 1;
+const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+/* --- New helper: localStorage keys & helpers --- */
+const LS_KEYS = {
+  USERS: "ls_users_stokapp_v1",
+  BARANG: "ls_barang_stokapp_v1",
+  SESSION: "ls_session_stokapp_v1"
+};
+
+function readLocalUsers() {
+  try { return JSON.parse(localStorage.getItem(LS_KEYS.USERS) || "[]"); } catch(e){ return []; }
+}
+function saveLocalUsers(arr) {
+  try { localStorage.setItem(LS_KEYS.USERS, JSON.stringify(arr || [])); } catch(e){}
+}
+function readLocalBarang() {
+  try { return JSON.parse(localStorage.getItem(LS_KEYS.BARANG) || "[]"); } catch(e){ return []; }
+}
+function saveLocalBarang(arr) {
+  try { localStorage.setItem(LS_KEYS.BARANG, JSON.stringify(arr || [])); } catch(e){}
+}
+function readLocalSession() {
+  try { return JSON.parse(localStorage.getItem(LS_KEYS.SESSION) || "null"); } catch(e){ return null; }
+}
+function saveLocalSession(obj) {
+  try { localStorage.setItem(LS_KEYS.SESSION, JSON.stringify(obj || null)); } catch(e){}
+}
+
+/* --- Sync helpers: push localStorage -> IndexedDB if IDB empty --- */
+function syncLocalToIDBIfEmpty() {
+  // populate users and barang from localStorage if IDB has none
+  getBarangAll(idbBarang => {
+    getAllUsersFromIDB(idbUsers => {
+      if ((idbBarang && idbBarang.length>0) || (idbUsers && idbUsers.length>0)) {
+        // IDB already has data — do nothing
+        return;
+      }
+      // else import from localStorage
+      const lsUsers = readLocalUsers();
+      const lsBarang = readLocalBarang();
+      // import users
+      if (lsUsers && lsUsers.length) {
+        lsUsers.forEach(u => {
+          try {
+            const t = db.transaction("users","readwrite");
+            t.objectStore("users").add(u).onerror = ()=>{};
+          } catch(e){}
+        });
+      }
+      // import barang (avoid duplicates by name)
+      if (lsBarang && lsBarang.length) {
+        lsBarang.forEach(b => {
+          try {
+            const t = db.transaction("barang","readwrite");
+            t.objectStore("barang").add({ nama: b.nama, stok: b.stok }).onerror = ()=>{};
+          } catch(e){}
+        });
+      }
+      // import session
+      const lsSession = readLocalSession();
+      if (lsSession) {
+        try {
+          const t = db.transaction("session","readwrite");
+          t.objectStore("session").put(lsSession).onerror = ()=>{};
+        } catch(e){}
+      }
+    });
+  });
+}
+
+/* helper to get all users from IDB (not exposed originally) */
+function getAllUsersFromIDB(cb) {
+  const arr = [];
+  const store = db.transaction("users","readonly").objectStore("users");
+  store.openCursor().onsuccess = function(e){
+    const cursor = e.target.result;
+    if (cursor) { arr.push(cursor.value); cursor.continue(); } else { cb(arr); }
+  };
+}
+
+req.onupgradeneeded = function(e) {
+  db = e.target.result;
+  if (!db.objectStoreNames.contains("users")) {
+    const uStore = db.createObjectStore("users", { keyPath: "username" });
+    uStore.createIndex("role", "role", { unique: false });
+  }
+  if (!db.objectStoreNames.contains("barang")) {
+    const bStore = db.createObjectStore("barang", { keyPath: "id", autoIncrement: true });
+    bStore.createIndex("nama", "nama", { unique: false });
+  }
+  if (!db.objectStoreNames.contains("session")) {
+    db.createObjectStore("session", { keyPath: "key" });
+  }
+};
+
+req.onsuccess = function(e) {
+  db = e.target.result;
+  // After DB ready, ensure sync from localStorage if needed
+  try { syncLocalToIDBIfEmpty(); } catch(e){}
+  Login();
+};
+req.onerror = function(e) { alert("Gagal membuka database: " + e.target.error); };
+
+function tx(storeName, mode="readonly") { return db.transaction(storeName, mode).objectStore(storeName); }
+
+/* Users */
+function addUserToDB(userObj, cb) { 
+  const t=db.transaction("users","readwrite");
+  t.objectStore("users").add(userObj).onsuccess = ()=> {
+    // also update localStorage users list
+    try {
+      const ls = readLocalUsers();
+      ls.push(userObj);
+      saveLocalUsers(ls);
+    } catch(e){}
+    cb && cb();
+  };
+  // handle add error gracefully
+  t.objectStore("users").onerror = ()=> { cb && cb(); };
+}
+function getUserFromDB(username, cb) { 
+  const r = tx("users").get(username); 
+  r.onsuccess = ()=> {
+    if (r.result == undefined || r.result == null) {
+      // fallback to localStorage users if not found in IDB
+      const ls = readLocalUsers();
+      const found = ls.find(u=>u.username === username);
+      cb(found);
+    } else cb(r.result);
+  }; 
+}
+function updateUserInDB(userObj, cb) { 
+  const t=db.transaction("users","readwrite"); 
+  t.objectStore("users").put(userObj).onsuccess = ()=> {
+    // update localStorage copy
+    try {
+      const ls = readLocalUsers();
+      const idx = ls.findIndex(u=>u.username===userObj.username);
+      if (idx === -1) ls.push(userObj); else ls[idx] = userObj;
+      saveLocalUsers(ls);
+    } catch(e){}
+    cb && cb();
+  }; 
+}
+
+/* Session */
+function setSession(user, role, cb) { 
+  const t=db.transaction("session","readwrite"); 
+  const obj = { key:"current", user, role };
+  t.objectStore("session").put(obj).onsuccess = ()=> {
+    // also save to localStorage
+    try { saveLocalSession(obj); } catch(e){}
+    cb && cb();
+  };
+}
+function clearSession(cb) { 
+  const t=db.transaction("session","readwrite"); 
+  t.objectStore("session").delete("current").onsuccess = ()=> {
+    try { localStorage.removeItem(LS_KEYS.SESSION); } catch(e){}
+    cb && cb();
+  }; 
+}
+function getSession(cb) { 
+  const r = tx("session").get("current"); 
+  r.onsuccess = ()=> {
+    if (r.result == undefined || r.result == null) {
+      // fallback to localStorage
+      const ls = readLocalSession();
+      cb(ls);
+    } else cb(r.result);
+  }; 
+}
+
+/* Barang */
+function addBarangToDB(item, cb) { 
+  const t=db.transaction("barang","readwrite"); 
+  t.objectStore("barang").add(item).onsuccess = ()=> {
+    // update localStorage list of barang
+    try {
+      const ls = readLocalBarang();
+      // keep same shape: {nama, stok} (IDs in IDB ignored in local copy)
+      ls.push({ nama: item.nama, stok: item.stok });
+      saveLocalBarang(ls);
+    } catch(e){}
+    cb && cb(); 
+  }; 
+}
+function putBarangToDB(item, cb) { 
+  const t=db.transaction("barang","readwrite"); 
+  t.objectStore("barang").put(item).onsuccess = ()=> {
+    // update localStorage barang: match by name if exists, else push
+    try {
+      const ls = readLocalBarang();
+      const idx = ls.findIndex(b => (b.nama||"").toLowerCase() === (item.nama||"").toLowerCase());
+      if (idx === -1) ls.push({ nama: item.nama, stok: item.stok });
+      else ls[idx] = { nama: item.nama, stok: item.stok };
+      saveLocalBarang(ls);
+    } catch(e){}
+    cb && cb(); 
+  }; 
+}
+function getBarangAll(cb) {
+  const arr = [];
+  const store = db.transaction("barang","readonly").objectStore("barang");
+  store.openCursor().onsuccess = function(e) {
+    const cursor = e.target.result;
+    if (cursor) { arr.push(cursor.value); cursor.continue(); } else {
+      if (arr.length === 0) {
+        // if IDB empty, fallback to localStorage records (map to objects without id)
+        const ls = readLocalBarang();
+        if (ls && ls.length) {
+          // convert to shape similar to IDB (generate temporary negative ids to avoid collision)
+          const converted = ls.map((b, idx) => ({ id: -(idx+1), nama: b.nama, stok: b.stok }));
+          cb(converted);
+          return;
+        }
+      }
+      cb(arr);
+    }
+  };
+}
+function getBarangById(id, cb) { 
+  const r = tx("barang").get(id); 
+  r.onsuccess = ()=> {
+    if (r.result == undefined || r.result == null) {
+      // fallback: try to find in localStorage by name? If id is negative (we created temp), map
+      const ls = readLocalBarang();
+      if (id < 0) {
+        const idx = (-id)-1;
+        const v = (ls[idx]) ? { id: id, nama: ls[idx].nama, stok: ls[idx].stok } : null;
+        cb(v);
+      } else {
+        // try to find by id not possible in localStorage — fallback null
+        cb(null);
+      }
+    } else cb(r.result);
+  }; 
+}
+function deleteBarangById(id, cb) { 
+  const t=db.transaction("barang","readwrite"); 
+  t.objectStore("barang").delete(id).onsuccess = ()=> {
+    // remove from localStorage by name if we can find the name in the deleted item was known
+    try {
+      // since we don't have item's name here, best-effort: rebuild localStorage from IDB current state
+      getBarangAll(data => {
+        // data includes possibly negative-temp ids from localStorage fallback; produce canonical ls array
+        const ls = data.map(it => ({ nama: it.nama, stok: it.stok }));
+        saveLocalBarang(ls);
+        cb && cb();
+      });
+    } catch(e){ cb && cb(); }
+  }; 
+}
+/* UI helpers */
+function showRegister(){ loginPage.style.display="none"; registerPage.style.display="block"; }
+function showLogin(){ 
+  registerPage.style.display="none"; 
+  loginPage.style.display="block"; 
+  // safety: ensure login inputs active & focused after switching from register
+  try {
+    document.getElementById("loginUser").disabled = false;
+    document.getElementById("loginPass").disabled = false;
+    document.getElementById("loginUser").readOnly = false;
+    document.getElementById("loginPass").readOnly = false;
+    setTimeout(()=> { document.getElementById("loginUser").focus(); }, 50);
+  } catch(e){}
+}
+
+function register(){
+  const u = regUser.value.trim();
+  const p = regPass.value.trim();
+  const key = adminKey.value.trim();
+  if (!u || !p) return alert("Isi semua kolom!");
+  getUserFromDB(u, existing => {
+    if (existing) return alert("Username sudah terdaftar!");
+    const role = (key === "ADMIN123") ? "admin" : "user";
+    const userObj = { username: u, pass: p, role: role, logoData: null };
+    addUserToDB(userObj, () => { 
+      alert("account has been sucsesfully as "+role.toUpperCase()+"!"); 
+      showLogin(); 
+      // extra: ensure login inputs cleared and focus
+      try {
+        setTimeout(()=> {
+          document.getElementById("loginUser").value="";
+          document.getElementById("loginPass").value="";
+          document.getElementById("loginUser").focus();
+        }, 120);
+      } catch(e){}
+    });
+  });
+}
+
+function login(){
+  const u = loginUser.value.trim();
+  const p = loginPass.value.trim();
+  if (!u || !p) return alert("Isi username & password!");
+  getUserFromDB(u, user => {
+    if (!user) return alert("Username atau password salah!");
+    if (user.pass !== p) return alert("Username atau password salah!");
+    setSession(u, user.role, () => {
+      currentUser = u;
+      currentRole = user.role;
+      showMain();
+      muatLogo();
+    });
+  });
+}
+
+function logout(){
+  clearSession(() => {
+    currentUser = null;
+    currentRole = "user";
+    mainPage.style.display = "none";
+    loginPage.style.display = "block";
+  });
+}
+
+/* Barang functions */
+function tampilkanTabel(f="") {
+  getBarangAll(data => {
+    const d = data.filter(x => (x.nama||"").toLowerCase().includes(f.toLowerCase())).sort((a,b) => (a.nama||"").localeCompare(b.nama||""));
+    const b = tabelBody;
+    b.innerHTML = "";
+    d.forEach((x,i) => {
+      b.innerHTML += `<tr class="${(x.stok||0)<5?'low-stock':''}">
+        <td>${i+1}</td>
+        <td>${x.nama}</td>
+        <td>${x.stok}</td>
+        <td><input type="number" min="0" value="0" onchange="barangMasuk(${x.id}, this.value)"></td>
+        <td><input type="number" min="0" value="0" onchange="barangKeluar(${x.id}, this.value)"></td>
+        <td>${x.stok} ${x.stok==1?"<div class='warning'>⚠  Have to incease stock!</div>":""}</td>
+        <td>${currentRole==="admin"?
+          `<div class='aksi-btn'><button class='edit-btn' onclick='editBarang(${x.id})'>Edit</button><button onclick='hapusBarang(${x.id})'>Delete</button></div>`:
+          "<i>Just Admin</i>"
+        }</td></tr>`;
+    });
+  });
+}
+
+function tambahBarang(){
+  if (currentRole !== "admin") return alert("Hanya admin yang bisa menambah barang!");
+  const n = namaBarang.value.trim();
+  let s = parseInt(stokBarang.value);
+  if (!n) return alert("Isi nama barang!");
+  if (isNaN(s) || s < 0) s = 0;
+  addBarangToDB({ nama: n, stok: s }, () => { tampilkanTabel(); });
+  namaBarang.value = "";
+  stokBarang.value = "";
+}
+
+function barangMasuk(id, v) {
+  const tambah = parseInt(v) || 0;
+  if (tambah <= 0) return;
+  getBarangById(id, item => {
+    if (!item) return;
+    // If item comes from localStorage fallback (negative id), update localStorage copy directly and also push to IDB properly
+    if (id < 0) {
+      // update ls array
+      const ls = readLocalBarang();
+      const idx = (-id) - 1;
+      if (ls[idx]) {
+        ls[idx].stok = (ls[idx].stok || 0) + tambah;
+        saveLocalBarang(ls);
+        // also attempt to add to IDB for persistence
+        try { addBarangToDB({ nama: ls[idx].nama, stok: ls[idx].stok }, ()=> tampilkanTabel()); } catch(e){ tampilkanTabel(); }
+      } else tampilkanTabel();
+      return;
+    }
+    item.stok = (item.stok || 0) + tambah;
+    putBarangToDB(item, () => { tampilkanTabel(); });
+  });
+}
+
+function barangKeluar(id, v) {
+  const keluar = parseInt(v) || 0;
+  if (keluar <= 0) return;
+  getBarangById(id, item => {
+    if (!item) return;
+    if (id < 0) {
+      // update localStorage entry
+      const ls = readLocalBarang();
+      const idx = (-id) - 1;
+      if (ls[idx]) {
+        ls[idx].stok = (ls[idx].stok || 0) - keluar;
+        if (ls[idx].stok < 0) ls[idx].stok = 0;
+        saveLocalBarang(ls);
+        try { addBarangToDB({ nama: ls[idx].nama, stok: ls[idx].stok }, ()=> tampilkanTabel()); } catch(e){ tampilkanTabel(); }
+      } else tampilkanTabel();
+      return;
+    }
+    item.stok = (item.stok || 0) - keluar;
+    if (item.stok < 0) item.stok = 0;
+    putBarangToDB(item, () => { tampilkanTabel(); });
+  });
+}
+
+function editBarang(id) {
+  if (currentRole !== "admin") return alert("Hanya admin yang bisa mengedit!");
+  getBarangById(id, item => {
+    if (!item) return;
+    const n = prompt("Edit this item:", item.nama);
+    if (n && n.trim() !== "") {
+      item.nama = n.trim();
+      putBarangToDB(item, () => tampilkanTabel());
+    }
+  });
+}
+
+function hapusBarang(id) {
+  if (currentRole !== "admin") return alert("Hanya admin yang bisa menghapus!");
+  if (!confirm("Are you sure you want delete this item?")) return;
+  deleteBarangById(id, () => tampilkanTabel());
+}
+
+function searchBarang(){ const v = searchInput.value; tampilkanTabel(v); }
+
+/* Logo upload per-user */
+const logoInput = document.getElementById("logoInput"), logoImg = document.getElementById("logo");
+logoImg.addEventListener("click", ()=> logoInput.click());
+
+logoInput.addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    logoImg.src = dataUrl;
+    if (!currentUser) return;
+    getUserFromDB(currentUser, user => {
+      if (!user) return;
+      user.logoData = dataUrl;
+      updateUserInDB(user, () => { /* saved */ });
+    });
+  };
+  reader.readAsDataURL(f);
+});
+
+function muatLogo() {
+  if (!currentUser) return;
+  getUserFromDB(currentUser, user => {
+    if (!user) return;
+    if (user.logoData) logoImg.src = user.logoData;
+    else logoImg.src = "https://cdn-icons-png.flaticon.com/512/3443/3443338.png";
+  });
+}
+
+/* Auto-login & showMain */
+let currentUser = null;
+let currentRole = "user";
+
+function showMain(){
+  loginPage.style.display = "none";
+  registerPage.style.display = "none";
+  mainPage.style.display = "block";
+  getSession(s => {
+    if (s && s.user) {
+      currentUser = s.user;
+      currentRole = s.role || "user";
+      userInfo.innerText = "User Login: "+currentUser+" ("+currentRole.toUpperCase()+")";
+      muatLogo();
+      tampilkanTabel();
+      document.getElementById("addSection").style.display = (currentRole==="admin") ? "block" : "none";
+      document.getElementById("modeBanner").style.background = (currentRole==="admin") ? "red" : "#0056d6";
+      document.getElementById("modeBanner").innerText = (currentRole==="admin") ? "👑 MODE ADMIN ACTIVE" : "👤 MODE USER (LIMITED)";
+    } else {
+      loginPage.style.display = "block";
+      mainPage.style.display = "none";
+    }
+  });
+}
+
+function autoLogin() {
+  getSession(s => {
+    if (s && s.user) {
+      currentUser = s.user;
+      currentRole = s.role || "user";
+      showMain();
+    } else {
+      showLogin();
+    }
+  });
+}
+
+/* Import Excel/CSV using SheetJS */
+const excelInput = document.getElementById("excelInput");
+const importMode = document.getElementById("importMode");
+const importStatus = document.getElementById("importStatus");
+
+excelInput.addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (currentRole !== "admin") { alert("Hanya admin yang bisa melakukan import."); excelInput.value=""; return; }
+  importStatus.innerText = "Membaca file...";
+  try {
+    const data = await f.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    if (!rows || rows.length === 0) {
+      importStatus.innerText = "File kosong atau tidak terbaca.";
+      return;
+    }
+    importStatus.innerText = `Ditemukan ${rows.length} baris. Memproses...`;
+    // detect columns
+    const detectColumns = (obj) => {
+      const keys = Object.keys(obj);
+      let nameKey = keys.find(k => /nama|name|item|barang/i.test(k));
+      let stockKey = keys.find(k => /stok|stock|qty|quantity|jumlah/i.test(k));
+      return { nameKey, stockKey };
+    };
+    const { nameKey, stockKey } = detectColumns(rows[0]);
+    if (!nameKey) {
+      importStatus.innerText = "Kolom nama barang tidak ditemukan. Pastikan ada header 'nama'/'name'/'item'/'barang'.";
+      return;
+    }
+    const mode = importMode ? importMode.value : "append";
+
+    if (mode === "merge") {
+      // load existing
+      const existing = {};
+      await new Promise(res => {
+        getBarangAll(data => { data.forEach(it => { existing[(it.nama||"").toLowerCase()] = it; }); res(); });
+      });
+      let processed = 0;
+      for (const r of rows) {
+        const namaRaw = String(r[nameKey] || "").trim();
+        if (!namaRaw) continue;
+        let stokVal = 0;
+        if (stockKey) stokVal = parseInt(String(r[stockKey]||"").replace(/[^0-9\-]/g,"")) || 0;
+        const key = namaRaw.toLowerCase();
+        if (existing[key]) {
+          const item = existing[key];
+          item.stok = (item.stok || 0) + stokVal;
+          await new Promise(res => putBarangToDB(item, () => { res(); }));
+        } else {
+          await new Promise(res => addBarangToDB({ nama: namaRaw, stok: isNaN(stokVal)?0:stokVal }, () => { res(); }));
+        }
+        processed++;
+      }
+      importStatus.innerText = `Import selesai (merge). Diproses: ${processed} baris.`;
+      tampilkanTabel();
+    } else {
+      let processed = 0;
+      for (const r of rows) {
+        const namaRaw = String(r[nameKey] || "").trim();
+        if (!namaRaw) continue;
+        let stokVal = 0;
+        if (stockKey) stokVal = parseInt(String(r[stockKey]||"").replace(/[^0-9\-]/g,"")) || 0;
+        await new Promise(res => addBarangToDB({ nama: namaRaw, stok: isNaN(stokVal)?0:stokVal }, () => { res(); }));
+        processed++;
+      }
+      importStatus.innerText = `Import selesai (append). Ditambahkan: ${processed} baris.`;
+      tampilkanTabel();
+    }
+  } catch (err) {
+    console.error(err);
+    importStatus.innerText = "Terjadi kesalahan saat membaca file: " + (err.message || err);
+  } finally {
+    excelInput.value = "";
+    setTimeout(()=> importStatus.innerText = "", 5000);
+  }
+});
+
+// label click triggers input (cek role)
+document.querySelector('label[for="excelInput"]').addEventListener('click', ()=> {
+  if (currentRole !== "admin") { alert("Hanya admin yang bisa melakukan import."); return; }
+  excelInput.click();
+});
+
+/* Ensure autoLogin called when db ready (additional safety) */
+window.addEventListener("load", () => { if (db) autoLogin(); });
+
+</script>
+</body>
+</html>
+<!-- ADMIN TOOLS (Hapus Semua + Export) -->
+<div id="adminTools" style="text-align:center; margin:20px 0; display:none;">
+  <button onclick="hapusSemuaBarang()" 
+          style="background-color:#ff3c3c; color:white; padding:10px 16px; border-radius:6px; border:none; cursor:pointer; margin-right:10px;">
+    Delete all items
+  </button>
+  <button onclick="exportToExcel()" 
+          style="background-color:#0056d6; color:white; padding:10px 16px; border-radius:6px; border:none; cursor:pointer;">
+    Export to excel
+  </button>
+</div>
+
+<script>
+  // --------------------- HAPUS SEMUA BARANG ---------------------
+  function hapusSemuaBarang(){
+    if(currentRole !== "admin") return alert("Hanya admin yang bisa menghapus!");
+    if(!confirm("Yakin ingin menghapus semua barang?")) return;
+    getBarangAll(data => {
+      let promises = data.map(it => new Promise(res => deleteBarangById(it.id, res)));
+      Promise.all(promises).then(() => tampilkanTabel());
+    });
+  }
+
+  // --------------------- EXPORT KE EXCEL ---------------------
+  function exportToExcel() {
+    if(currentRole !== "admin") return alert("Hanya admin yang bisa export!");
+    getBarangAll(data => {
+      if(!data || data.length===0) return alert("Tidak ada data untuk diexport!");
+      const ws_data = data.map((item,i)=>({
+        No: i+1,
+        Name: item.nama,
+        Stock: item.stok
+      }));
+      const ws = XLSX.utils.json_to_sheet(ws_data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Stock");
+      XLSX.writeFile(wb, "StockBarang.xlsx");
+    });
+  }
+
+  // --------------------- TAMPILKAN ADMIN TOOLS ---------------------
+  function tampilkanAdminTools() {
+    const tools = document.getElementById("adminTools");
+    if(currentRole === "admin") tools.style.display = "block";
+    else tools.style.display = "none";
+  }
+
+  // --------------------- MODIFIKASI showMain() ---------------------
+  function showMain(){
+    loginPage.style.display = "none";
+    registerPage.style.display = "none";
+    mainPage.style.display = "block";
+    getSession(s => {
+      if (s && s.user) {
+        currentUser = s.user;
+        currentRole = s.role || "user";
+        userInfo.innerText = "User Login: "+currentUser+" ("+currentRole.toUpperCase()+")";
+        muatLogo();
+        tampilkanTabel();
+        document.getElementById("addSection").style.display = (currentRole==="admin") ? "block" : "none";
+        document.getElementById("modeBanner").style.background = (currentRole==="admin") ? "red" : "#0056d6";
+        document.getElementById("modeBanner").innerText = (currentRole==="admin") ? "👑 MODE ADMIN ACTIVE" : "👤 MODE USER (LIMITED)";
+        // <-- tampilkan admin tools
+        tampilkanAdminTools();
+      } else {
+        loginPage.style.display = "block";
+        mainPage.style.display = "none";
+        tampilkanAdminTools(); // sembunyikan tools saat tidak login
+      }
+    });
+  }
+
+  // --------------------- MODIFIKASI logout() ---------------------
+  function logout(){
+    clearSession(() => {
+      currentUser = null;
+      currentRole = "user";
+      mainPage.style.display = "none";
+      loginPage.style.display = "block";
+      tampilkanAdminTools(); // pastikan tombol hilang saat logout
+    });
+  }
+</script>
+<script>
+function hapusSemuaBarang(){
+  if(currentRole !== "admin") return alert("Hanya admin yang bisa menghapus!");
+  if(!confirm("Are you sure you want delete all items?")) return;
+
+  // Hapus semua dari IndexedDB
+  const store = db.transaction("barang", "readwrite").objectStore("barang");
+  const clearReq = store.clear();
+  clearReq.onsuccess = function() {
+    // Hapus juga di localStorage
+    saveLocalBarang([]);
+    tampilkanTabel(); // refresh tabel
+    alert("All items have  been deleted!");
+  };
+  clearReq.onerror = function(e) {
+    alert("Gagal menghapus semua barang: " + e.target.error);
+  };
+}
+</script><script>
+function clearSession(){
+    localStorage.removeItem("sessionUser");
+    localStorage.removeItem("sessionRole");
+}
+
+function logout(){
+    // Hapus session
+    clearSession();
+
+    // Reset user & role
+    currentUser = null;
+    currentRole = "user";
+
+    // Sembunyikan main page, tampilkan login
+    document.getElementById("mainPage").style.display = "none";
+    document.getElementById("loginPage").style.display = "block";
+
+    // Sembunyikan admin tools
+    tampilkanAdminTools();
+
+    // Reset mode banner
+    const banner = document.getElementById("modeBanner");
+    banner.innerText = "";
+    banner.style.background = "#0056d6"; // warna default user / kosong
+}
+</script>
+
